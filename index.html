@@ -1,0 +1,82 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="description" content="A UI for retrieving & listing Tsampi repo data">
+        <meta name="author" content="Brian Randall">
+
+        <title>Tsampi Repo Lookup</title>
+        <script
+			  src="https://code.jquery.com/jquery-3.1.1.min.js"
+			  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+			  crossorigin="anonymous">
+        </script>
+    </head>
+
+    <body>
+        <h1>Repo Contents:</h1>
+        <p id="resContainer"></p>
+    </body>
+
+    <script>
+        var pResCont = document.getElementById("resContainer");
+        var linksArr = [];
+        var prmsArr  = [];
+        var prms;
+
+        function xhrPrms(pUrl, pResType) {
+            // Return a new promise.
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+
+                xhr.responseType = pResType;
+                xhr.open('GET', pUrl);
+                xhr.onload = function() {
+                    // check the status, cuz this is called even on 404 etc
+                    if (xhr.status == 200) {
+                        // Resolve the promise with the response text
+                        resolve(xhr.response);
+                    }
+                    else {
+                        // Otherwise reject with the status text
+                        reject(Error(xhr.statusText));
+                    }
+                };
+
+                // Handle network errors
+                xhr.onerror = function() {
+                    reject(Error("Network Error"));
+                };
+
+                // Make the request
+                xhr.send();
+            });
+        }
+
+        xhrPrms('/data/', 'document').then(function(response) {
+            linksA = response.links;
+            var linkHref;
+            var lineBreak;
+
+            for(var i = 0; i < linksA.length; i++) {
+                prms = xhrPrms(linksA[i].href, 'text')
+                prmsArr.push(prms);
+                //console.log(linksA[i].href);
+            }
+
+            Promise.all(prmsArr).then(values => { 
+                for(var i = 0; i < values.length; i++) {
+                    linkHref = document.createTextNode(values[i]);
+                    lineBreak = document.createElement("br");
+                    pResCont.appendChild(linkHref);
+                    pResCont.appendChild(lineBreak);
+                }
+            });
+
+        }, function(error) {
+            console.error("Failed!", error);
+        })
+
+    </script>
+</html>
